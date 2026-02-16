@@ -1,5 +1,6 @@
 package com.example.placementadmin.controllers;
 
+import com.example.placementadmin.dto.StatusUpdateRequest;
 import com.example.placementadmin.entities.Admin;
 import com.example.placementadmin.entities.Application;
 import com.example.placementadmin.repositories.AdminRepository;
@@ -8,7 +9,6 @@ import com.example.placementadmin.services.AdminActionLogger;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 @RestController
@@ -23,14 +24,15 @@ import java.util.Set;
 @CrossOrigin(origins = "http://localhost:3000")
 public class AdminApplicationController {
 
+              8 compatible
     private static final Set<String> VALID_STATUSES =
             new HashSet<>(Arrays.asList("PENDING", "APPROVED", "REJECTED", "UNDER_REVIEW"));
 
     private final ApplicationRepository appRepo;
     private final AdminRepository adminRepo;
     private final AdminActionLogger logger;
-
-    public AdminApplicationController(ApplicationRepository appRepo,
+            
+            epo,
                                       AdminRepository adminRepo,
                                       AdminActionLogger logger) {
         this.appRepo = appRepo;
@@ -38,27 +40,28 @@ public class AdminApplicationController {
         this.logger = logger;
     }
 
+    // ================= GET ALL =================
     @GetMapping
     public ResponseEntity<List<Application>> getAllApplications() {
         return ResponseEntity.ok(appRepo.findAll());
     }
 
+    // ================= UPDATE STATUS =================
     @PutMapping("/{id}/status")
-    @Transactional
     public ResponseEntity<Application> updateStatus(
             @PathVariable Long id,
-            @RequestParam String status,
+            @RequestBody StatusUpdateRequest request,
             Authentication auth) {
 
         if (auth == null || auth.getName() == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not authenticated");
         }
 
-        if (status == null || status.trim().isEmpty()) {
+        if (request.getStatus() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status is required");
         }
 
-        String normalizedStatus = status.toUpperCase().trim();
+        String normalizedStatus = request.getStatus().toUpperCase(Locale.ROOT);
 
         if (!VALID_STATUSES.contains(normalizedStatus)) {
             throw new ResponseStatusException(
@@ -66,17 +69,16 @@ public class AdminApplicationController {
                     "Invalid status. Allowed: " + VALID_STATUSES
             );
         }
-
+                          
         Application app = appRepo.findById(id)
                 .orElseThrow(() ->
-                        new ResponseStatusException(HttpStatus.NOT_FOUND, "Application not found"));
-
+                        new Res
+                         on 
         Admin admin = adminRepo.findByEmail(auth.getName())
                 .orElseThrow(() ->
                         new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Admin not found"));
 
         app.setStatus(normalizedStatus);
-        Application saved = appRepo.save(app);
 
         logger.log(admin.getId(),
                 "UPDATE_APPLICATION_STATUS",
@@ -84,6 +86,6 @@ public class AdminApplicationController {
                 id.toString(),
                 "Status changed to: " + normalizedStatus);
 
-        return ResponseEntity.ok(saved);
+        return ResponseEntity.ok(app);
     }
 }
